@@ -1,0 +1,16 @@
+# Node
+/capstone-project-1/node_modules
+/capstone-project-1/build
+.DS_Store
+
+# Python
+/server/__pycache__
+/server/instance
+/server/*.db
+/server/*.sqlite3
+*.pyc
+
+# Environment
+.env
+/server/.env
+/capstone-project-1/.env
