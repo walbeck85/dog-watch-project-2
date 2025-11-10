@@ -1,0 +1,13 @@
+[packages]
+flask = "*"
+flask-bcrypt = "*"
+flask-migrate = "*"
+flask-sqlalchemy = "*"
+flask-marshmallow = "*"
+flask-restful = "*"
+psycopg2-binary = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.8"
