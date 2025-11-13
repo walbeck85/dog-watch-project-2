@@ -1,0 +1,63 @@
+/*
+  This file ONLY handles the 3D flip card animation.
+  All internal card styling (text, buttons, etc.) is now
+  handled by MUI's <Card> component.
+*/
+
+/* 1. THE 3D SCENE
+  This is the outer container. It sets up the 3D space 
+  and the overall size of the card.
+*/
+.card-scene {
+/*     MUST define a fixed height for the 3D scene.
+     A height of 0 was causing the card to be invisible.
+  */
+  height: 350px;
+  width: 300px;
+  perspective: 1000px;
+}
+
+/* 2. THE FLIP CONTAINER
+  This container holds both faces and applies the flip animation.
+  We set height to 100% to match its parent.
+*/
+.card-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transition: transform 0.8s;
+  transform-style: preserve-3d; /* Corrected 'preserve-3d' */
+}
+
+/*
+  3. THE FLIP STATE
+  This class is added by React to flip the container.
+*/
+.card-container.is-flipped {
+  transform: rotateY(180deg);
+}
+
+/* 4. CARD FACES (COMMON STYLES)
+  Shared styles for both front and back.
+*/
+.card-face {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+}
+
+/* 5. THE FRONT FACE
+  No custom styles needed.
+*/
+.card-face-front {
+  /* MUI <Card> handles all styling. */
+}
+
+/* 6. THE BACK FACE
+  This face is pre-flipped 180 degrees.
+*/
+.card-face-back {
+  transform: rotateY(180deg);
+  overflow-y: auto; /* Allow scrolling if details are long */
+}
