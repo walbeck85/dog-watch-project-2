@@ -13,7 +13,7 @@ import {
   Alert 
 } from '@mui/material';
 
-// We accept currentUser as a prop to show their name
+// I accept currentUser as a prop to show their name
 function AdminDashboard({ currentUser }) {
   // --- NEW: State for the list of breeds ---
   const [breeds, setBreeds] = useState([]);
@@ -30,8 +30,8 @@ function AdminDashboard({ currentUser }) {
 
   // --- NEW: Fetch all breeds on component load ---
   useEffect(() => {
-    // We don't need to be logged in to see breeds,
-    // but we'll fetch them here anyway.
+    // I don't need to be logged in to see breeds,
+    // but I'll fetch them here anyway.
     fetch("/breeds")
       .then(r => r.json())
       .then(setBreeds);
@@ -54,7 +54,7 @@ function AdminDashboard({ currentUser }) {
         age: parseInt(age), // Make sure age is an integer
         status: status,
         breed_id: selectedBreedId,
-        // user_id is handled by the server via our session!
+        // user_id is handled by the server via the session!
       }),
     })
     .then(r => {
@@ -69,7 +69,7 @@ function AdminDashboard({ currentUser }) {
           setStatus('Available');
         });
       } else {
-        // Handle errors (like validation errors from our model)
+        // Handle errors (like validation errors from the model)
         r.json().then(err => setError(err.error));
       }
     });
@@ -88,7 +88,7 @@ function AdminDashboard({ currentUser }) {
         <Typography variant="h4" gutterBottom>
           Admin Dashboard
         </Typography>
-        {/* We use the currentUser prop passed down from App.js */}
+        {/* I use the currentUser prop passed down from App.js */}
         <Typography variant="h6">
           Welcome, {currentUser ? currentUser.username : 'Admin'}!
         </Typography>
@@ -141,7 +141,7 @@ function AdminDashboard({ currentUser }) {
             label="Breed"
             onChange={(e) => setSelectedBreedId(e.target.value)}
           >
-            {/* Render our breed <MenuItem> components here */}
+            {/* Render the breed <MenuItem> components here */}
             {breedOptions}
           </Select>
         </FormControl>

@@ -72,26 +72,32 @@ def check_if_logged_in():
         'check_session',
         'login',
         'logout',
-        'breeds' # <-- ADDED THIS so the form can fetch breeds
+        'breeds', # For the admin form dropdown
+        'dogs',   # For the public homepage
+        'dogsbybreedapiid' # For the "View Available" button
     ]
     
+    # Check if the requested endpoint is *not* in our safe list
+    # and if the user is *not* logged in.
     if (request.endpoint not in open_access_routes) and (not session.get('user_id')):
         return {'error': '401 Unauthorized'}, 401
 
 # --- INVENTORY ROUTES ---
 
-# NEW: Route to get all breeds for the dropdown
+# Route to get all breeds (for the admin dropdown)
 class Breeds(Resource):
     def get(self):
         all_breeds = Breed.query.all()
         return breeds_schema.dump(all_breeds), 200
 
+# Route to get all *our* dogs (for the public homepage)
 class Dogs(Resource):
     def get(self):
         all_dogs = Dog.query.all()
         return dogs_schema.dump(all_dogs), 200
 
     def post(self):
+        # This route is protected by our @before_request hook
         json_data = request.get_json()
         
         try:
@@ -99,18 +105,21 @@ class Dogs(Resource):
                 name=json_data.get('name'),
                 age=json_data.get('age'),
                 status=json_data.get('status', 'Available'), 
-                user_id=session['user_id'], 
-                breed_id=json_data.get('breed_id')
+                user_id=session['user_id'], # Assign ownership
+                breed_id=json_data.get('breed_id'),
+                image_url=json_data.get('image_url') # Add image_url
             )
             
             db.session.add(new_dog)
             db.session.commit()
             
+            # Return the full, serialized dog object
             return dog_schema.dump(new_dog), 201
             
         except (IntegrityError, ValueError) as e:
             return {'error': str(e)}, 422
 
+# Route to get/update/delete a *specific* dog by its LOCAL ID
 class DogById(Resource):
     def get(self, id):
         dog = db.session.get(Dog, id)
@@ -123,6 +132,7 @@ class DogById(Resource):
         if not dog:
             return {'error': 'Dog not found'}, 404
         
+        # Ownership check
         if dog.user_id != session['user_id']:
             return {'error': '403 Forbidden - You do not own this resource'}, 403
             
@@ -139,6 +149,7 @@ class DogById(Resource):
         if not dog:
             return {'error': 'Dog not found'}, 404
             
+        # Ownership check
         if dog.user_id != session['user_id']:
             return {'error': '403 Forbidden - You do not own this resource'}, 403
             
@@ -146,14 +157,29 @@ class DogById(Resource):
         db.session.commit()
         return {}, 204
 
+# --- NEW ROUTE ---
+# Route to get *our* dogs by the BREED'S EXTERNAL API ID
+class DogsByBreedApiId(Resource):
+    def get(self, api_id):
+        # 1. Find the local breed using the external api_id
+        breed = Breed.query.filter(Breed.api_id == api_id).first()
+        
+        if not breed:
+            return {'error': 'Breed not found'}, 404
+        
+        # 2. Return all dogs associated with that breed's *local* id
+        # This uses the 'dogs' relationship we built in our model!
+        return dogs_schema.dump(breed.dogs), 200
+
 # --- Add Resources to API ---
-api.add_resource(Signup, '/signup')
-api.add_resource(CheckSession, '/check_session')
-api.add_resource(Login, '/login')
-api.add_resource(Logout, '/logout')
-api.add_resource(Breeds, '/breeds') # <-- ADDED THIS ROUTE
-api.add_resource(Dogs, '/dogs')
-api.add_resource(DogById, '/dogs/<int:id>')
+api.add_resource(Signup, '/signup', endpoint='signup')
+api.add_resource(CheckSession, '/check_session', endpoint='check_session')
+api.add_resource(Login, '/login', endpoint='login')
+api.add_resource(Logout, '/logout', endpoint='logout')
+api.add_resource(Breeds, '/breeds', endpoint='breeds')
+api.add_resource(Dogs, '/dogs', endpoint='dogs')
+api.add_resource(DogById, '/dogs/<int:id>', endpoint='dogbyid')
+api.add_resource(DogsByBreedApiId, '/breeds/api/<int:api_id>/dogs', endpoint='dogsbybreedapiid')
 
 
 if __name__ == '__main__':

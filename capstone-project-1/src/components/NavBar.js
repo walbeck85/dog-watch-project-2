@@ -4,13 +4,12 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { AppBar, Toolbar, Typography, Button, IconButton, useTheme } from '@mui/material';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
-// Make sure your AppThemeProvider is imported if it's used here
-// (I'll assume it's in context, but your file structure may vary)
+// Make sure the AppThemeProvider is imported if it's used here
 // import { useThemeContext } from '../context/AppThemeProvider'; 
 
 // --- 1. ACCEPT 'currentUser' and 'setCurrentUser' AS PROPS ---
 function NavBar({ currentUser, setCurrentUser }) {
-  // Your theme context (if you have one)
+  // My theme context (if I have one)
   // const { mode, toggleTheme } = useThemeContext();
   const theme = useTheme(); // Fallback if context is not used here
   const navigate = useNavigate();
@@ -37,7 +36,7 @@ function NavBar({ currentUser, setCurrentUser }) {
         </Typography>
         
         <Button component={NavLink} to="/compare" color="inherit">
-          Compare (0) {/* We'll link this to compare context later */}
+          Compare (0) {/* I'll link this to compare context later */}
         </Button>
 
         {/* --- 3. ADD CONDITIONAL LOGIC --- */}
@@ -61,7 +60,7 @@ function NavBar({ currentUser, setCurrentUser }) {
           </Button>
         )}
 
-        {/* Your Dark Mode Toggle (if it's in the NavBar) */}
+        {/* My Dark Mode Toggle (if it's in the NavBar) */}
         <IconButton sx={{ ml: 1 }} onClick={() => { /* TODO: add toggleTheme */ }} color="inherit">
           {theme.palette.mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
         </IconButton>

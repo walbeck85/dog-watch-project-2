@@ -1,6 +1,7 @@
 import React, { useState, useContext } from "react";
 import { CompareContext } from "../context/CompareContext";
 import "./BreedCard.css"; // We still need this for the flip animation!
+import { useNavigate } from 'react-router-dom'; // <-- IMPORT useNavigate
 
 // --- Import all the new MUI components ---
 import {
@@ -28,9 +29,12 @@ function BreedCard({ breed }) {
   const [details, setDetails] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-
+  
   // --- Snackbar (Toast) State ---
   const [toast, setToast] = useState({ open: false, message: "", severity: "success" });
+
+  // --- NEW: React Router hook for navigation ---
+  const navigate = useNavigate();
 
   // --- Image URL Helper ---
   const getImageUrl = () => {
@@ -49,6 +53,8 @@ function BreedCard({ breed }) {
     setIsFlipped(true);
     setError(null);
     try {
+      // NOTE: We are using the external API ID 'breed.id', 
+      // NOT our local database 'breed.api_id'
       const response = await fetch(`https://api.thedogapi.com/v1/breeds/${breed.id}`, {
         headers: { "x-api-key": process.env.REACT_APP_DOG_API_KEY },
       });
@@ -88,9 +94,16 @@ function BreedCard({ breed }) {
     setToast({ ...toast, open: false });
   };
 
+  // --- NEW: Handler for the "View Available" button ---
+  const handleViewAvailableClick = (e) => {
+    e.stopPropagation(); // Stop card from flipping
+    // We will navigate to a new page, passing the breed's external API ID
+    // (This matches the 'api_id' in our local Breed table)
+    navigate(`/available/${breed.id}`); 
+  };
+
   // --- Render ---
   return (
-    // We are still on the 'feature/mui-refactor' branch
     <div className="card-scene">
       <div 
         className={`card-container ${isFlipped ? "is-flipped" : ""}`}
@@ -98,17 +111,13 @@ function BreedCard({ breed }) {
       >
         
         {/* === CARD FRONT === */}
-        {/* *** THIS IS THE FIX ***
-          We WRAP the MUI <Card> in the .card-face div
-          This forces the <Card> to obey the animation's position.
-        */}
         <div className="card-face card-face-front">
           <Card 
             sx={{ 
               display: 'flex', 
               flexDirection: 'column', 
               height: '100%',
-              position: 'relative' // Positioning parent for the button
+              position: 'relative' 
             }}
           >
             <CardMedia
@@ -123,12 +132,16 @@ function BreedCard({ breed }) {
                 {breed.name}
               </Typography>
             </CardContent>
+            
             <CardActions sx={{ 
               justifyContent: 'center',
               position: 'absolute',
               bottom: '16px',
               left: 0,
-              right: 0
+              right: 0,
+              // NEW: Allow buttons to wrap
+              flexWrap: 'wrap', 
+              gap: '8px'
             }}>
               <Button
                 size="small"
@@ -137,8 +150,22 @@ function BreedCard({ breed }) {
                 startIcon={bIsInCompare ? <CheckIcon /> : <AddIcon />}
                 onClick={handleCompareClick}
               >
-                {bIsInCompare ? 'Added to Compare' : 'Add to Compare'}
+                {bIsInCompare ? 'Added' : 'Compare'}
               </Button>
+
+              {/* --- THE NEW BUTTON --- */}
+              {/* 'breed.available_dogs' is the augmented array from BreedList */}
+              {breed.available_dogs && breed.available_dogs.length > 0 && (
+                <Button
+                  size="small"
+                  variant="contained"
+                  color="success"
+                  onClick={handleViewAvailableClick} // Use new handler
+                >
+                  View Available ({breed.available_dogs.length})
+                </Button>
+              )}
+              {/* --- END NEW BUTTON --- */}
             </CardActions>
           </Card>
         </div>

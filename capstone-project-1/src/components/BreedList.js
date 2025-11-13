@@ -1,43 +1,69 @@
 import React, { useState, useEffect } from "react";
-import BreedCard from "./BreedCard";
+import DogCard from "./DogCard"; // <-- UPDATED IMPORT
 import SearchBar from "./SearchBar";
 import SortDropdown from "./SortDropdown";
 import TemperamentFilter from "./TemperamentFilter";
-import { Box, Button, Typography, CircularProgress } from '@mui/material';
+import { Box, Button, CircularProgress } from '@mui/material';
 
 function BreedList() {
   // --- STATE MANAGEMENT ---
-  const [breeds, setBreeds] = useState([]); // This will hold breeds from TheDogAPI
+  const [breeds, setBreeds] = useState([]); // From External API
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // (All other filter/sort states remain the same)
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOrder, setSortOrder] = useState("name-asc");
   const [allTemperaments, setAllTemperaments] = useState([]);
   const [selectedTemperaments, setSelectedTemperaments] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // --- DATA FETCHING ---
+  // --- DATA FETCHING (HYBRID MODEL) ---
   useEffect(() => {
-    async function fetchBreeds() {
+    async function fetchHybridData() {
       try {
-        // We are back to fetching from the external API
-        const response = await fetch("https://api.thedogapi.com/v1/breeds", {
-          headers: {
-            "x-api-key": process.env.REACT_APP_DOG_API_KEY, // Make sure your .env file has this!
-          },
-        });
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        
-        // This is where we will "augment" the data
-        // For now, just set the breeds
-        setBreeds(data);
+        // I will fetch from BOTH APIs at the same time
+        const [breedsResponse, dogsResponse] = await Promise.all([
+          // Request 1: External API (for all breed info)
+          fetch("https://api.thedogapi.com/v1/breeds", {
+            headers: { "x-api-key": process.env.REACT_APP_DOG_API_KEY },
+          }),
+          // Request 2: the Local API (for the inventory)
+          fetch("/dogs") 
+        ]);
 
-        // Calculate all temperaments
+        if (!breedsResponse.ok) throw new Error("Failed to fetch breeds from TheDogAPI");
+        if (!dogsResponse.ok) throw new Error("Failed to fetch local dog inventory");
+
+        const breedsData = await breedsResponse.json();
+        const localDogsData = await dogsResponse.json();
+        
+        // --- THIS IS THE HYBRID LOGIC ---
+        // 1. Create a "lookup map" of the local dogs by their *API* breed ID
+        const localDogMap = {};
+        localDogsData.forEach(dog => {
+          // 'dog.breed.api_id' comes from the 'smart' seed and Marshmallow schema
+          const apiId = dog.breed.api_id; 
+          if (!localDogMap[apiId]) {
+            localDogMap[apiId] = []; // Create an array for this breed
+          }
+          localDogMap[apiId].push(dog); // Add the dog
+        });
+
+        // 2. "Augment" the external API data with the local data
+        const augmentedBreeds = breedsData.map(breed => ({
+          ...breed, // All original breed data (name, temperament, etc.)
+          // Add the local data here:
+          available_dogs: localDogMap[breed.id] || [] // e.g., [ {name: "Buddy"}, ... ]
+        }));
+        
+        // --- END HYBRID LOGIC ---
+        
+        setBreeds(augmentedBreeds); // Set the new, combined data
+
+        // Calculate all temperaments (same as before)
         const temperamentsSet = new Set();
-        data.forEach(breed => {
+        breedsData.forEach(breed => {
           if (breed.temperament) {
             breed.temperament.split(', ').forEach(temp => temperamentsSet.add(temp.trim()));
           }
@@ -50,10 +76,10 @@ function BreedList() {
         setIsLoading(false);
       }
     }
-    fetchBreeds();
+    fetchHybridData();
   }, []); 
 
-  // --- HELPER FUNCTIONS (Back to original P1 logic) ---
+  // --- FILTERING & SORTING (No changes needed) ---
   const getAverageFromRange = (rangeString) => {
     if (!rangeString) return 0;
     const numbers = rangeString.match(/\d+/g);
@@ -61,11 +87,10 @@ function BreedList() {
     const sum = numbers.reduce((sum, val) => sum + parseInt(val, 10), 0);
     return sum / (numbers.length || 1);
   }
-  const getAverageWeight = (breed) => getAverageFromRange(breed.weight?.imperial);
+  const getAverageIight = (breed) => getAverageFromRange(breed.Iight?.imperial);
   const getAverageHeight = (breed) => getAverageFromRange(breed.height?.imperial);
   const getAverageLifespan = (breed) => getAverageFromRange(breed.life_span);
 
-  // --- FILTERING & SORTING LOGIC (Back to original P1 logic) ---
   const processedBreeds = breeds
     .filter((breed) =>
       breed.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -81,8 +106,8 @@ function BreedList() {
       switch (sortOrder) {
         case "name-asc": return a.name.localeCompare(b.name);
         case "name-desc": return b.name.localeCompare(a.name);
-        case "weight-asc": return getAverageWeight(a) - getAverageWeight(b);
-        case "weight-desc": return getAverageWeight(b) - getAverageWeight(a);
+        case "Iight-asc": return getAverageIight(a) - getAverageIight(b);
+        case "Iight-desc": return getAverageIight(b) - getAverageIight(a);
         case "height-asc": return getAverageHeight(a) - getAverageHeight(b);
         case "height-desc": return getAverageHeight(b) - getAverageHeight(a);
         case "lifespan-asc": return getAverageLifespan(a) - getAverageLifespan(b);
@@ -102,7 +127,7 @@ function BreedList() {
   return (
     <Box sx={{ p: 2 }}>
       
-      {/* Controls Area (Back to original P1 logic) */}
+      {/* Controls Area (Identical to P1) */}
       <Box sx={{ 
         display: 'flex', 
         flexWrap: 'wrap', 
@@ -153,9 +178,9 @@ function BreedList() {
         maxWidth: "1400px",
         margin: "1.5rem auto"
       }}>
-        {/* We are back to passing 'breed' as the prop */}
+        {/* 'breed' prop now contains the augmented data! */}
         {processedBreeds.map((breed) => (
-          <BreedCard key={breed.id} breed={breed} />
+          <DogCard key={breed.id} breed={breed} /> // <-- UPDATED COMPONENT
         ))}
       </Box>
     </Box>
