@@ -1,0 +1,23 @@
+/*
+  --- Dark Mode Styles ---
+  These styles are applied based on the class set in App.js
+*/
+
+.App.light {
+  background-color: #ffffff;
+  color: #282c34; /* Dark text */
+  min-height: 100vh;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.App.dark {
+  background-color: #282c34;
+  color: #f5f5f5; /* Light text */
+  min-height: 100vh;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Make links more visible in dark mode */
+.App.dark a {
+  color: #61dafb; /* React blue */
+}
