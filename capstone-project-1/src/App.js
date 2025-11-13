@@ -2,32 +2,35 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 import { Routes, Route } from 'react-router-dom';
 
-// Import your components
+// Import my components
 import NavBar from './components/NavBar';
 import BreedList from './components/BreedList';
 import ComparePage from './components/ComparePage';
 import Login from './components/Login'; 
 import AdminDashboard from './components/AdminDashboard';
-import ProtectedRoute from './components/ProtectedRoute'; // <-- 1. IMPORT THE GUARD
+import ProtectedRoute from './components/ProtectedRoute'; 
+import AvailableDogsPage from './components/AvailableDogsPage'; // <-- IMPORT NEW PAGE
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
+    // Check if the user is already logged in from a previous session
     fetch("/check_session")
       .then(r => {
         if (r.ok) {
           r.json().then(user => setCurrentUser(user));
         }
       });
-  }, []);
+  }, []); // Empty dependency array means this runs once on app load
 
   return (
     <div className="App">
-      {/* 2. PASS currentUser TO NavBar (so it can show "Logout") */}
+      {/* Pass user state to NavBar to show "Login" or "Logout" */}
       <NavBar currentUser={currentUser} setCurrentUser={setCurrentUser} />
       
       <Routes> 
+        {/* --- Public Routes --- */}
         <Route 
           path="/" 
           element={<BreedList />} 
@@ -41,11 +44,18 @@ function App() {
           element={<Login setCurrentUser={setCurrentUser} />} 
         />
         
-        {/* --- 3. UPDATED ADMIN ROUTE --- */}
+        {/* --- NEW PUBLIC ROUTE FOR AVAILABLE DOGS --- */}
+        {/* This is the page for a specific breed's available dogs */}
+        <Route 
+          path="/available/:api_id" 
+          element={<AvailableDogsPage />} 
+        />
+        
+        {/* --- Private Admin Route --- */}
         <Route 
           path="/admin" 
           element={
-            // This is our guard in action!
+            // This component "guards" the AdminDashboard
             <ProtectedRoute currentUser={currentUser}>
               <AdminDashboard currentUser={currentUser} />
             </ProtectedRoute>

@@ -62,7 +62,7 @@ const features = [
 ];
 
 function ComparePage() {
-  // 1. Get the list of IDs from our global context
+  // 1. Get the list of IDs from the global context
   const { compareIds, clearCompare } = useContext(CompareContext);
 
   // 2. State for the fetched breed data, loading, and errors

@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Box, TextField, Button, Typography, Container, Alert } from '@mui/material';
 
 // --- NEW PROP ---
-// We accept setCurrentUser from App.js
+// I accept setCurrentUser from App.js
 function Login({ setCurrentUser }) { 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
