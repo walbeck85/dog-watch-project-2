@@ -2,18 +2,20 @@
 
 from config import app, db
 from models import User, Breed, Dog
-import requests # Make sure you ran 'pipenv install requests'
+import requests # This is why we installed the 'requests' package
 
 # --- CONFIG ---
 DOG_API_URL = "https://api.thedogapi.com/v1/breeds"
 # PASTE YOUR KEY HERE
-API_KEY = "YOUR_API_KEY_HERE" 
+API_KEY = "live_QN5NbgHgQ8k2AcEkeiJn3I5aRMbdqJaMxsYPmKlzg5tZH0okhE8NEvCK6VjZyne6"
 
 print("Seeding database...")
 
 with app.app_context():
     print("Clearing old data...")
+    # Delete dogs first (they have foreign keys)
     Dog.query.delete()
+    # Then delete users and breeds
     User.query.delete()
     Breed.query.delete()
 
@@ -32,11 +34,10 @@ with app.app_context():
         
         for b in api_breeds:
             # We store the name AND their external ID
-            # Check if 'id' and 'name' exist in the response
             if b.get('id') and b.get('name'):
                 breed = Breed(
                     name=b['name'],
-                    api_id=b['id']
+                    api_id=b['id'] # Storing the external API's ID
                 )
                 breed_objects.append(breed)
             else:
@@ -52,7 +53,7 @@ with app.app_context():
     # --- 3. SEED ADMIN ---
     print("Seeding admin...")
     admin = User(username="admin")
-    admin.password_hash = "admin123"
+    admin.password_hash = "admin123" # The setter in models.py hashes this
     db.session.add(admin)
     db.session.commit()
     

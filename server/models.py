@@ -48,7 +48,9 @@ class Breed(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String, unique=True, nullable=False)
-    # NEW: This links us to TheDogAPI's ID system
+    
+    # --- NEW COLUMN ---
+    # This links our local breed to TheDogAPI's ID system
     api_id = db.Column(db.Integer, unique=True) 
 
     dogs = db.relationship('Dog', back_populates='breed')
@@ -64,7 +66,9 @@ class Dog(db.Model):
     name = db.Column(db.String, nullable=False)
     age = db.Column(db.Integer)
     status = db.Column(db.String, default='Available')
-    # NEW: Admin can paste a URL here
+    
+    # --- NEW COLUMN ---
+    # Admin can paste a URL here
     image_url = db.Column(db.String) 
 
     # --- Foreign Keys (The "Links") ---
@@ -85,8 +89,7 @@ class Dog(db.Model):
     def __repr__(self):
         return f'<Dog {self.name}>'
 
-# --- Marshmallow Schemas (from Course 9, Module 6) ---
-# We MUST define UserSchema and BreedSchema BEFORE DogSchema.
+# --- Marshmallow Schemas (Correct Order) ---
 
 # 1. Define UserSchema FIRST
 class UserSchema(ma.SQLAlchemyAutoSchema):
@@ -98,7 +101,7 @@ class UserSchema(ma.SQLAlchemyAutoSchema):
 class BreedSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Breed
-        fields = ('id', 'name', 'api_id')
+        fields = ('id', 'name', 'api_id') # <-- Added api_id
 
 # 3. Define DogSchema LAST (so it can refer to the others)
 class DogSchema(ma.SQLAlchemyAutoSchema):
