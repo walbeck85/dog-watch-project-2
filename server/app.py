@@ -8,12 +8,10 @@ from sqlalchemy.exc import IntegrityError
 from config import app, db, api
 
 # --- MODELS & SCHEMAS ---
-# Import our models...
 from models import User, Breed, Dog
-# ...and our schemas
-from models import user_schema, breed_schema, dog_schema, dogs_schema
+from models import user_schema, breed_schema, breeds_schema, dog_schema, dogs_schema
 
-# --- AUTHENTICATION ROUTES (Course 10 Blueprint) ---
+# --- AUTHENTICATION ROUTES ---
 
 class Signup(Resource):
     def post(self):
@@ -64,8 +62,7 @@ class Logout(Resource):
             return {}, 204
         return {'error': 'Unauthorized'}, 401
 
-# --- AUTHORIZATION HOOK (Course 10, Module 2) ---
-# NEW CODE BLOCK 
+# --- AUTHORIZATION HOOK ---
 
 @app.before_request
 def check_if_logged_in():
@@ -75,46 +72,43 @@ def check_if_logged_in():
         'check_session',
         'login',
         'logout',
+        'breeds' # <-- ADDED THIS so the form can fetch breeds
     ]
-    # If the user is trying to access a route NOT in this list
-    # and they don't have a user_id in their session...
+    
     if (request.endpoint not in open_access_routes) and (not session.get('user_id')):
-        # ...block them.
         return {'error': '401 Unauthorized'}, 401
 
-# --- "DOG" INVENTORY ROUTES (Our CRUD API) ---
-# NEW CODE BLOCK 
+# --- INVENTORY ROUTES ---
+
+# NEW: Route to get all breeds for the dropdown
+class Breeds(Resource):
+    def get(self):
+        all_breeds = Breed.query.all()
+        return breeds_schema.dump(all_breeds), 200
 
 class Dogs(Resource):
     def get(self):
-        # 1. Get all dogs from DB
         all_dogs = Dog.query.all()
-        # 2. Serialize them (many=True)
         return dogs_schema.dump(all_dogs), 200
 
     def post(self):
-        # 1. Get data from request
         json_data = request.get_json()
         
         try:
-            # 2. Create new dog
             new_dog = Dog(
                 name=json_data.get('name'),
                 age=json_data.get('age'),
-                status=json_data.get('status', 'Available'), # Default to 'Available'
-                user_id=session['user_id'], # Assign ownership to logged-in user
+                status=json_data.get('status', 'Available'), 
+                user_id=session['user_id'], 
                 breed_id=json_data.get('breed_id')
             )
             
-            # 3. Save to DB
             db.session.add(new_dog)
             db.session.commit()
             
-            # 4. Return the new dog (201 Created)
             return dog_schema.dump(new_dog), 201
             
         except (IntegrityError, ValueError) as e:
-            # Handle bad data (e.g., non-existent breed_id or validation error)
             return {'error': str(e)}, 422
 
 class DogById(Resource):
@@ -129,22 +123,15 @@ class DogById(Resource):
         if not dog:
             return {'error': 'Dog not found'}, 404
         
-        # --- Ownership Check (Course 10, Module 3) ---
         if dog.user_id != session['user_id']:
             return {'error': '403 Forbidden - You do not own this resource'}, 403
             
-        # 1. Get data from request
         json_data = request.get_json()
-        
-        # 2. Update fields
         for key, value in json_data.items():
             setattr(dog, key, value)
             
-        # 3. Save to DB
         db.session.add(dog)
         db.session.commit()
-        
-        # 4. Return updated dog
         return dog_schema.dump(dog), 200
 
     def delete(self, id):
@@ -152,15 +139,11 @@ class DogById(Resource):
         if not dog:
             return {'error': 'Dog not found'}, 404
             
-        # --- Ownership Check (Course 10, Module 3) ---
         if dog.user_id != session['user_id']:
             return {'error': '403 Forbidden - You do not own this resource'}, 403
             
-        # 1. Delete from DB
         db.session.delete(dog)
         db.session.commit()
-        
-        # 2. Return No Content (204)
         return {}, 204
 
 # --- Add Resources to API ---
@@ -168,10 +151,9 @@ api.add_resource(Signup, '/signup')
 api.add_resource(CheckSession, '/check_session')
 api.add_resource(Login, '/login')
 api.add_resource(Logout, '/logout')
-
-# NEW ROUTES
-api.add_resource(Dogs, '/dogs') # Maps to /dogs
-api.add_resource(DogById, '/dogs/<int:id>') # Maps to /dogs/1, /dogs/2, etc.
+api.add_resource(Breeds, '/breeds') # <-- ADDED THIS ROUTE
+api.add_resource(Dogs, '/dogs')
+api.add_resource(DogById, '/dogs/<int:id>')
 
 
 if __name__ == '__main__':
