@@ -20,7 +20,7 @@ class User(db.Model):
     # all dogs they created are also deleted.
     dogs = db.relationship('Dog', back_populates='user', cascade='all, delete-orphan')
 
-    # --- Password Hashing (from Course 10, Module 3) ---
+    # --- Password Hashing ---
     @hybrid_property
     def password_hash(self):
         # This line prevents us from ever accidentally reading the hash
@@ -92,7 +92,7 @@ class Dog(db.Model):
     def __repr__(self):
         return f'<Dog {self.name}>'
 
-# --- Marshmallow Schemas (from Course 9, Module 6) ---
+# --- Marshmallow Schemas ---
 
 class UserSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
