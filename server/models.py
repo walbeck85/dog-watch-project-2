@@ -15,25 +15,19 @@ class User(db.Model):
     _password_hash = db.Column(db.String, nullable=False)
 
     # --- Relationships ---
-    # A 'User' (admin) can create many 'Dog' entries.
-    # 'cascade="all, delete-orphan"' means if a User is deleted,
-    # all dogs they created are also deleted.
     dogs = db.relationship('Dog', back_populates='user', cascade='all, delete-orphan')
 
     # --- Password Hashing ---
     @hybrid_property
     def password_hash(self):
-        # This line prevents us from ever accidentally reading the hash
         raise AttributeError('Password hashes may not be viewed.')
 
     @password_hash.setter
     def password_hash(self, password):
-        # This is where we set the hash
         password_hash = bcrypt.generate_password_hash(password.encode('utf-8'))
         self._password_hash = password_hash.decode('utf-8')
 
     def authenticate(self, password):
-        # This is where we check the hash
         return bcrypt.check_password_hash(self._password_hash, password.encode('utf-8'))
 
     # --- Validations ---
@@ -54,9 +48,9 @@ class Breed(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String, unique=True, nullable=False)
+    # NEW: This links us to TheDogAPI's ID system
+    api_id = db.Column(db.Integer, unique=True) 
 
-    # --- Relationships ---
-    # A 'Breed' can be associated with many 'Dog' entries.
     dogs = db.relationship('Dog', back_populates='breed')
 
     def __repr__(self):
@@ -69,16 +63,15 @@ class Dog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String, nullable=False)
     age = db.Column(db.Integer)
-    status = db.Column(db.String, default='Available') # e.g., "Available", "Adopted"
+    status = db.Column(db.String, default='Available')
+    # NEW: Admin can paste a URL here
+    image_url = db.Column(db.String) 
 
     # --- Foreign Keys (The "Links") ---
-    # This is the 'many' side of the one-to-many with User
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    # This is the 'many' side of the one-to-many with Breed
     breed_id = db.Column(db.Integer, db.ForeignKey('breeds.id'))
 
     # --- Relationships ---
-    # 'back_populates' creates the two-way connection
     user = db.relationship('User', back_populates='dogs')
     breed = db.relationship('Breed', back_populates='dogs')
 
@@ -92,27 +85,28 @@ class Dog(db.Model):
     def __repr__(self):
         return f'<Dog {self.name}>'
 
-# --- Marshmallow Schemas ---
+# --- Marshmallow Schemas (from Course 9, Module 6) ---
+# We MUST define UserSchema and BreedSchema BEFORE DogSchema.
 
+# 1. Define UserSchema FIRST
 class UserSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = User
-        # We only want to show 'id' and 'username' in API responses
         fields = ('id', 'username')
 
+# 2. Define BreedSchema SECOND
 class BreedSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Breed
-        fields = ('id', 'name')
+        fields = ('id', 'name', 'api_id')
 
+# 3. Define DogSchema LAST (so it can refer to the others)
 class DogSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Dog
-        # Include all fields from the Dog model
-        include_fk = True
-
-    # We tell Marshmallow to use our *other schemas*
-    # to properly serialize the nested relationships.
+        include_fk = True # This will include user_id and breed_id
+    
+    # These lines will now work because UserSchema and BreedSchema exist
     user = ma.Nested(UserSchema)
     breed = ma.Nested(BreedSchema)
 

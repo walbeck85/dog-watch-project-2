@@ -6,6 +6,7 @@ flask-sqlalchemy = "*"
 flask-marshmallow = "*"
 flask-restful = "*"
 psycopg2-binary = "*"
+requests = "*"
 
 [dev-packages]
 
