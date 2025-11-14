@@ -1,22 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Container, Typography, Box, CircularProgress, Alert } from '@mui/material';
-
-// I need to create/rename BreedCard.js to DogCard.js for this to work
-import DogCard from './DogCard'; 
+import DogCard from './DogCard'; // It correctly imports our new DogCard
 
 function AvailableDogsPage() {
   const [dogs, setDogs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   
-  // This hook gets the ':api_id' from the URL (e.g., "149" for Labrador)
+  // This hook gets the ':api_id' from the URL
   const { api_id } = useParams();
 
   useEffect(() => {
     async function fetchAvailableDogs() {
       try {
-        // Fetch from the new endpoint I created in app.py
+        // Fetch from our new endpoint
         const response = await fetch(`/breeds/api/${api_id}/dogs`);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -30,7 +28,7 @@ function AvailableDogsPage() {
       }
     }
     fetchAvailableDogs();
-  }, [api_id]); // Re-run this fetch if the api_id in the URL changes
+  }, [api_id]); // Re-run if the api_id in the URL changes
 
   if (isLoading) return (
     <Box sx={{ display: 'flex', justifyContent: 'center', mt: 5 }}>
@@ -39,7 +37,7 @@ function AvailableDogsPage() {
   );
   if (error) return <Alert severity="error">Error: {error}</Alert>;
 
-  // Get the breed name from the first dog for the page title
+  // Get the breed name from the first dog for the title
   const breedName = dogs.length > 0 ? dogs[0].breed.name : "Dogs";
 
   return (
@@ -58,7 +56,7 @@ function AvailableDogsPage() {
           justifyItems: "center",
           mt: 4
         }}>
-          {/* I pass the 'dog' prop to the universal card component */}
+          {/* We pass the 'dog' prop to our universal card */}
           {dogs.map((dog) => (
             <DogCard key={dog.id} dog={dog} />
           ))}

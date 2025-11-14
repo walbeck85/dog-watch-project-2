@@ -1,6 +1,6 @@
 import React, { useState, useContext } from "react";
 import { CompareContext } from "../context/CompareContext";
-import "./BreedCard.css"; // Keep old CSS for animation
+import "./DogCard.css"; // Keep old CSS for animation
 import { useNavigate } from 'react-router-dom'; 
 
 import {
@@ -10,8 +10,6 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import CheckIcon from '@mui/icons-material/Check';
 
-// This is now a "universal" card
-// It will render a BREED (from TheDogAPI) or a DOG (from my DB)
 function DogCard({ breed, dog }) {
   // --- Context & State ---
   const { isInCompare, addCompare, removeCompare, compareCount } = useContext(CompareContext);
@@ -23,20 +21,18 @@ function DogCard({ breed, dog }) {
   const navigate = useNavigate();
 
   // --- Determine what data to display ---
-  // I check if a 'dog' prop was passed. If not, I use the 'breed' prop.
   const isDogCard = Boolean(dog); 
   
   const displayData = {
     id: isDogCard ? dog.id : breed.id,
     api_id: isDogCard ? dog.breed.api_id : breed.id,
     name: isDogCard ? dog.name : breed.name,
-    // Use local dog image first, fallback to breed image
-    imageUrl: isDogCard ? dog.image_url : (breed.image?.url || `https://cdn2.thedogapi.com/images/${breed.reference_image_id}.jpg`),
+    imageUrl: isDogCard ? (dog.image_url || "https://via.placeholder.com/300x200") : (breed.image?.url || `https://cdn2.thedogapi.com/images/${breed.reference_image_id}.jpg`),
   };
 
   // --- API Fetch for Card Details (for Breeds only) ---
   const fetchBreedDetails = async () => {
-    if (isDogCard || details) { // Don't fetch details if it's a Dog card
+    if (isDogCard || details) { 
       setIsFlipped(true); 
       return;
     }
@@ -59,7 +55,6 @@ function DogCard({ breed, dog }) {
 
   // --- Event Handlers ---
   const handleCardClick = () => {
-    // Only allow flip for breed cards
     if (!isDogCard) {
       if (!isFlipped) fetchBreedDetails();
       else setIsFlipped(false);
@@ -102,13 +97,13 @@ function DogCard({ breed, dog }) {
         height="200"
         image={displayData.imageUrl || "https://via.placeholder.com/300x200"}
         alt={displayData.name}
+        onError={(e) => { e.target.src = "https://via.placeholder.com/300x200"; }}
         sx={{ objectPosition: 'top' }}
       />
       <CardContent sx={{ textAlign: 'center', pb: '80px' }}> 
         <Typography variant="body1" component="div" sx={{ fontWeight: 'bold' }}>
           {displayData.name}
         </Typography>
-        {/* If it's a Dog Card, show its breed name as a subtitle */}
         {isDogCard && (
           <Typography variant="subtitle2" color="primary">{dog.breed.name}</Typography>
         )}
@@ -118,7 +113,6 @@ function DogCard({ breed, dog }) {
         justifyContent: 'center', position: 'absolute', bottom: '16px',
         left: 0, right: 0, flexWrap: 'wrap', gap: '8px'
       }}>
-        {/* Show "Compare" only on Breed cards */}
         {!isDogCard && (
           <Button
             size="small"
@@ -130,8 +124,6 @@ function DogCard({ breed, dog }) {
             {isInCompare(displayData.id) ? 'Added' : 'Compare'}
           </Button>
         )}
-
-        {/* Show "View Available" only on Breed cards */}
         {!isDogCard && breed.available_dogs && breed.available_dogs.length > 0 && (
           <Button
             size="small"
@@ -142,8 +134,6 @@ function DogCard({ breed, dog }) {
             View Available ({breed.available_dogs.length})
           </Button>
         )}
-
-        {/* If it's a Dog Card, show its status */}
         {isDogCard && (
           <Chip 
             label={dog.status} 
@@ -165,20 +155,27 @@ function DogCard({ breed, dog }) {
         )}
         {error && <Typography color="error">Error: {error}</Typography>}
         
-        {/* If it's a Dog Card, show Dog details */}
         {isDogCard && dog && (
           <>
             <Typography variant="h6" component="div" gutterBottom>{dog.name}</Typography>
-            <Typography variant="body2"><strong>Status:</strong> {dog.status}</Typography>
-            <Typography variant="body2"><strong>Age:</strong> {dog.age} years old</Typography>
-            <Typography variant="body2"><strong>Breed:</strong> {dog.breed.name}</Typography>
-            <Typography variant="body2" sx={{ mt: 2 }}>
-              This is a specific dog available at our shelter! Contact us for more info.
-            </Typography>
+            <Typography variant="body2" gutterBottom><strong>Status:</strong> {dog.status}</Typography>
+            <Typography variant="body2" gutterBottom><strong>Age:</strong> {dog.age} years old</Typography>
+            <Typography variant="body2" gutterBottom><strong>Breed:</strong> {dog.breed.name}</Typography>
+            {dog.weight && (
+              <Typography variant="body2" gutterBottom><strong>Weight:</strong> {dog.weight}</Typography>
+            )}
+            {dog.temperament && (
+              <Typography variant="body2" gutterBottom><strong>Temperament:</strong> {dog.temperament}</Typography>
+            )}
+            {dog.description && (
+              <Typography variant="body2" sx={{ mt: 2 }}>
+                <strong>About {dog.name}:</strong><br />
+                {dog.description}
+              </Typography>
+            )}
           </>
         )}
         
-        {/* If it's a Breed Card, show Breed details */}
         {!isDogCard && details && (
           <>
             <Typography variant="h6" component="div" gutterBottom>{details.name}</Typography>
@@ -197,13 +194,11 @@ function DogCard({ breed, dog }) {
     <div className="card-scene">
       <div 
         className={`card-container ${isFlipped ? "is-flipped" : ""}`}
-        // Only allow flip for breed cards
         onClick={!isDogCard ? handleCardClick : undefined}
       >
         <div className="card-face card-face-front">{renderCardFront()}</div>
         <div className="card-face card-face-back">{renderCardBack()}</div>
       </div>
-
       <Snackbar
         open={toast.open}
         autoHideDuration={3000}
