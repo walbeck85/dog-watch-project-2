@@ -3,15 +3,20 @@ import {
   Container, Typography, Box, TextField, Button, 
   Alert, Grid,
   Autocomplete,
-  CircularProgress // <-- Import loading spinner
+  CircularProgress 
 } from '@mui/material';
-import ManageDogsList from './ManageDogList'; // <-- FIX: Changed to singular 'ManageDogList' to match your file
+import ManageDogsList from './ManageDogList'; // This import matches your file 'ManageDogList.js'
+import EditDogModal from './EditDogModal'; // <-- 1. IMPORT THE NEW MODAL
 
 function AdminDashboard({ currentUser }) {
   // --- STATE FOR DATA ---
-  const [breeds, setBreeds] = useState([]); // For the dropdown
-  const [dogs, setDogs] = useState([]); // <-- NEW: Holds the list of all dogs
-  const [isLoading, setIsLoading] = useState(true); // <-- NEW: Loading state
+  const [breeds, setBreeds] = useState([]); 
+  const [dogs, setDogs] = useState([]); 
+  const [isLoading, setIsLoading] = useState(true); 
+
+  // --- NEW STATE FOR EDIT MODAL ---
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [dogToEdit, setDogToEdit] = useState(null);
 
   // --- STATE FOR "ADD DOG" FORM ---
   const initialFormData = {
@@ -22,14 +27,14 @@ function AdminDashboard({ currentUser }) {
   const [formError, setFormError] = useState(null);
   const [formSuccess, setFormSuccess] = useState(null);
 
-  // --- NEW: State for the Manage List (e.g., delete errors) ---
+  // --- State for the Manage List ---
   const [listError, setListError] = useState(null);
 
   // --- FETCH BOTH BREEDS AND DOGS ON LOAD ---
   useEffect(() => {
     Promise.all([
       fetch("/breeds"),
-      fetch("/dogs") // <-- Fetch all dogs
+      fetch("/dogs") 
     ])
     .then(([breedsRes, dogsRes]) => {
       if (breedsRes.ok && dogsRes.ok) {
@@ -48,7 +53,7 @@ function AdminDashboard({ currentUser }) {
       setListError(err.message);
       setIsLoading(false);
     });
-  }, []); // Runs once on component mount
+  }, []); 
 
   // --- FORM HANDLERS (for AddDogForm) ---
   const handleChange = (e) => {
@@ -76,8 +81,7 @@ function AdminDashboard({ currentUser }) {
       if (r.ok) {
         r.json().then(newDog => {
           setFormSuccess(`Success! ${newDog.name} has been added.`);
-          setFormData(initialFormData); // Clear the form
-          // --- BUG FIX: Add new dog to the state ---
+          setFormData(initialFormData); 
           setDogs(currentDogs => [...currentDogs, newDog]);
         });
       } else {
@@ -86,7 +90,7 @@ function AdminDashboard({ currentUser }) {
     });
   }
 
-  // --- NEW: DELETE HANDLER (for ManageDogsList) ---
+  // --- DELETE HANDLER (for ManageDogsList) ---
   function handleDeleteDog(id) {
     setListError(null);
     fetch(`/dogs/${id}`, {
@@ -94,13 +98,31 @@ function AdminDashboard({ currentUser }) {
     })
     .then(r => {
       if (r.ok) {
-        // --- On success, remove dog from state ---
         setDogs(currentDogs => currentDogs.filter(dog => dog.id !== id));
       } else {
         r.json().then(err => setListError(err.error));
       }
     });
   }
+
+  // --- NEW: EDIT HANDLERS (for Modal) ---
+  const handleOpenEditModal = (dog) => {
+    setDogToEdit(dog);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseEditModal = () => {
+    setDogToEdit(null);
+    setIsModalOpen(false);
+  };
+
+  const handleUpdateDog = (updatedDog) => {
+    // Find the dog in the list and replace it with the updated version
+    setDogs(currentDogs => 
+      currentDogs.map(dog => (dog.id === updatedDog.id ? updatedDog : dog))
+    );
+  };
+  // --- END NEW EDIT HANDLERS ---
 
   return (
     <Container>
@@ -124,7 +146,6 @@ function AdminDashboard({ currentUser }) {
         {formSuccess && <Alert severity="success" sx={{ mb: 2 }}>{formSuccess}</Alert>}
         {formError && <Alert severity="error" sx={{ mb: 2 }}>{formError}</Alert>}
 
-        {/* --- Correct MUI v5 Grid Syntax --- */}
         <Grid container spacing={2}>
           <Grid item xs={12} sm={6}>
             <TextField
@@ -225,10 +246,23 @@ function AdminDashboard({ currentUser }) {
         {isLoading ? (
           <CircularProgress />
         ) : (
-          <ManageDogsList dogs={dogs} onDeleteDog={handleDeleteDog} />
+          <ManageDogsList 
+            dogs={dogs} 
+            onDeleteDog={handleDeleteDog}
+            onEditDog={handleOpenEditModal} // <-- 2. PASS THE "OPEN" FUNCTION
+          />
         )}
       </Box>
 
+      {/* --- RENDER THE EDIT MODAL (it's hidden by default) --- */}
+      {/* 3. RENDER THE MODAL */}
+      <EditDogModal 
+        dog={dogToEdit}
+        breeds={breeds}
+        open={isModalOpen}
+        onClose={handleCloseEditModal}
+        onUpdateDog={handleUpdateDog}
+      />
     </Container>
   );
 }

@@ -1,20 +1,33 @@
 import React, { useState, useEffect } from "react";
-import DogCard from "./DogCard"; // <-- UPDATED IMPORT
+import DogCard from "./DogCard";
 import SearchBar from "./SearchBar";
 import SortDropdown from "./SortDropdown";
 import TemperamentFilter from "./TemperamentFilter";
-import { Box, Button, CircularProgress } from '@mui/material';
+import { 
+  Box, 
+  Button, 
+  CircularProgress, 
+  Switch, // <-- NEW IMPORT
+  FormControlLabel // <-- NEW IMPORT
+} from '@mui/material';
 
 function BreedList() {
+  // --- STATE MANAGEMENT ---
   const [breeds, setBreeds] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // (Filter/sort states)
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOrder, setSortOrder] = useState("name-asc");
   const [allTemperaments, setAllTemperaments] = useState([]);
   const [selectedTemperaments, setSelectedTemperaments] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // --- NEW: State for our toggle ---
+  const [showAvailableOnly, setShowAvailableOnly] = useState(false);
+
+  // --- DATA FETCHING (HYBRID MODEL) ---
   useEffect(() => {
     async function fetchHybridData() {
       try {
@@ -22,7 +35,7 @@ function BreedList() {
           fetch("https://api.thedogapi.com/v1/breeds", {
             headers: { "x-api-key": process.env.REACT_APP_DOG_API_KEY },
           }),
-          fetch("/dogs") // Our local API
+          fetch("/dogs") 
         ]);
 
         if (!breedsResponse.ok) throw new Error("Failed to fetch breeds from TheDogAPI");
@@ -47,6 +60,7 @@ function BreedList() {
         
         setBreeds(augmentedBreeds);
 
+        // Calculate all temperaments
         const temperamentsSet = new Set();
         breedsData.forEach(breed => {
           if (breed.temperament) {
@@ -64,7 +78,7 @@ function BreedList() {
     fetchHybridData();
   }, []); 
 
-  // --- FILTERING & SORTING (No changes needed) ---
+  // --- FILTERING & SORTING ---
   const getAverageFromRange = (rangeString) => {
     if (!rangeString) return 0;
     const numbers = rangeString.match(/\d+/g);
@@ -87,6 +101,13 @@ function BreedList() {
         breed.temperament.includes(temp)
       );
     })
+    // --- NEW: "Available Only" Filter ---
+    .filter((breed) => {
+      // If the toggle is off, show all breeds (return true)
+      if (!showAvailableOnly) return true;
+      // If the toggle is on, ONLY show breeds with available dogs
+      return breed.available_dogs && breed.available_dogs.length > 0;
+    })
     .sort((a, b) => {
       switch (sortOrder) {
         case "name-asc": return a.name.localeCompare(b.name);
@@ -101,6 +122,7 @@ function BreedList() {
       }
     });
 
+  // --- RENDER LOGIC ---
   if (isLoading) return (
     <Box sx={{ display: 'flex', justifyContent: 'center', mt: 5 }}>
       <CircularProgress />
@@ -111,6 +133,7 @@ function BreedList() {
   return (
     <Box sx={{ p: 2 }}>
       
+      {/* Controls Area */}
       <Box sx={{ 
         display: 'flex', 
         flexWrap: 'wrap', 
@@ -132,6 +155,20 @@ function BreedList() {
           Filter Temperaments ({selectedTemperaments.length})
         </Button>
 
+        {/* --- NEW: "Available Only" Switch --- */}
+        <FormControlLabel
+          control={
+            <Switch
+              checked={showAvailableOnly}
+              onChange={(e) => setShowAvailableOnly(e.target.checked)}
+              color="primary"
+            />
+          }
+          label="Show Available Only"
+          sx={{ m: "1rem 0", ml: 2 }} // Add margin
+        />
+        {/* --- END NEW SWITCH --- */}
+
         {selectedTemperaments.length > 0 && (
           <Button 
             variant="outlined" 
@@ -152,6 +189,7 @@ function BreedList() {
         onTemperamentChange={setSelectedTemperaments}
       />
 
+      {/* Grid Display Area */}
       <Box sx={{
         display: "grid",
         gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
@@ -160,7 +198,6 @@ function BreedList() {
         maxWidth: "1400px",
         margin: "1.5rem auto"
       }}>
-        {/* We pass the 'breed' prop to our universal card */}
         {processedBreeds.map((breed) => (
           <DogCard key={breed.id} breed={breed} />
         ))}

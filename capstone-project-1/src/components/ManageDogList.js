@@ -6,16 +6,20 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 
-// This is a "dumb" component. It just receives the list of dogs
-// and a function to call when the delete button is clicked.
-function ManageDogsList({ dogs, onDeleteDog }) {
+// This component now accepts 'onEditDog'
+function ManageDogsList({ dogs, onDeleteDog, onEditDog }) {
 
   const handleDeleteClick = (dog) => {
-    // Show a confirmation before deleting
     if (window.confirm(`Are you sure you want to delete ${dog.name}?`)) {
-      // Call the parent's delete function
       onDeleteDog(dog.id);
     }
+  };
+
+  // --- NEW: Edit Handler ---
+  // This calls the function in the parent (AdminDashboard)
+  // to open the modal with this specific dog's data.
+  const handleEditClick = (dog) => {
+    onEditDog(dog);
   };
 
   return (
@@ -29,7 +33,8 @@ function ManageDogsList({ dogs, onDeleteDog }) {
               divider
               secondaryAction={
                 <>
-                  <IconButton edge="end" aria-label="edit" sx={{ mr: 1 }}>
+                  {/* --- NEW: Edit button is now wired up --- */}
+                  <IconButton edge="end" aria-label="edit" sx={{ mr: 1 }} onClick={() => handleEditClick(dog)}>
                     <EditIcon />
                   </IconButton>
                   <IconButton edge="end" aria-label="delete" onClick={() => handleDeleteClick(dog)}>
