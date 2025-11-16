@@ -1,34 +1,43 @@
-import React, { useState, useEffect } from "react";
-import DogCard from "./DogCard"; // <-- UPDATED IMPORT
+import React, { useState, useEffect, useContext } from "react"; // 1. Import useContext
+import { CompareContext } from "../context/CompareContext"; // 2. Import CompareContext
+import DogCard from "./DogCard";
 import SearchBar from "./SearchBar";
 import SortDropdown from "./SortDropdown";
 import TemperamentFilter from "./TemperamentFilter";
-import { Box, Button, CircularProgress } from '@mui/material';
+import { 
+  Box, 
+  Button, 
+  CircularProgress, 
+  Switch,
+  FormControlLabel 
+} from '@mui/material';
+import ClearAllIcon from '@mui/icons-material/ClearAll'; // 3. Import the icon
 
 function BreedList() {
   // --- STATE MANAGEMENT ---
-  const [breeds, setBreeds] = useState([]); // From External API
+  const [breeds, setBreeds] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   
-  // (All other filter/sort states remain the same)
+  // (Filter/sort states)
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOrder, setSortOrder] = useState("name-asc");
   const [allTemperaments, setAllTemperaments] = useState([]);
   const [selectedTemperaments, setSelectedTemperaments] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showAvailableOnly, setShowAvailableOnly] = useState(false);
+
+  // --- 4. CONSUME COMPARE CONTEXT ---
+  const { compareCount, clearCompare } = useContext(CompareContext);
 
   // --- DATA FETCHING (HYBRID MODEL) ---
   useEffect(() => {
     async function fetchHybridData() {
       try {
-        // I will fetch from BOTH APIs at the same time
         const [breedsResponse, dogsResponse] = await Promise.all([
-          // Request 1: External API (for all breed info)
           fetch("https://api.thedogapi.com/v1/breeds", {
             headers: { "x-api-key": process.env.REACT_APP_DOG_API_KEY },
           }),
-          // Request 2: the Local API (for the inventory)
           fetch("/dogs") 
         ]);
 
@@ -38,30 +47,23 @@ function BreedList() {
         const breedsData = await breedsResponse.json();
         const localDogsData = await dogsResponse.json();
         
-        // --- THIS IS THE HYBRID LOGIC ---
-        // 1. Create a "lookup map" of the local dogs by their *API* breed ID
         const localDogMap = {};
         localDogsData.forEach(dog => {
-          // 'dog.breed.api_id' comes from the 'smart' seed and Marshmallow schema
           const apiId = dog.breed.api_id; 
           if (!localDogMap[apiId]) {
-            localDogMap[apiId] = []; // Create an array for this breed
+            localDogMap[apiId] = [];
           }
-          localDogMap[apiId].push(dog); // Add the dog
+          localDogMap[apiId].push(dog);
         });
 
-        // 2. "Augment" the external API data with the local data
         const augmentedBreeds = breedsData.map(breed => ({
-          ...breed, // All original breed data (name, temperament, etc.)
-          // Add the local data here:
-          available_dogs: localDogMap[breed.id] || [] // e.g., [ {name: "Buddy"}, ... ]
+          ...breed,
+          available_dogs: localDogMap[breed.id] || []
         }));
         
-        // --- END HYBRID LOGIC ---
-        
-        setBreeds(augmentedBreeds); // Set the new, combined data
+        setBreeds(augmentedBreeds);
 
-        // Calculate all temperaments (same as before)
+        // Calculate all temperaments
         const temperamentsSet = new Set();
         breedsData.forEach(breed => {
           if (breed.temperament) {
@@ -79,7 +81,8 @@ function BreedList() {
     fetchHybridData();
   }, []); 
 
-  // --- FILTERING & SORTING (No changes needed) ---
+  // --- FILTERING & SORTING ---
+  // (All helper functions and .filter/.sort logic remain exactly the same)
   const getAverageFromRange = (rangeString) => {
     if (!rangeString) return 0;
     const numbers = rangeString.match(/\d+/g);
@@ -87,7 +90,7 @@ function BreedList() {
     const sum = numbers.reduce((sum, val) => sum + parseInt(val, 10), 0);
     return sum / (numbers.length || 1);
   }
-  const getAverageIight = (breed) => getAverageFromRange(breed.Iight?.imperial);
+  const getAverageWeight = (breed) => getAverageFromRange(breed.weight?.imperial);
   const getAverageHeight = (breed) => getAverageFromRange(breed.height?.imperial);
   const getAverageLifespan = (breed) => getAverageFromRange(breed.life_span);
 
@@ -102,13 +105,17 @@ function BreedList() {
         breed.temperament.includes(temp)
       );
     })
+    .filter((breed) => {
+      if (!showAvailableOnly) return true;
+      return breed.available_dogs && breed.available_dogs.length > 0;
+    })
     .sort((a, b) => {
       switch (sortOrder) {
         case "name-asc": return a.name.localeCompare(b.name);
         case "name-desc": return b.name.localeCompare(a.name);
-        case "Iight-asc": return getAverageIight(a) - getAverageIight(b);
-        case "Iight-desc": return getAverageIight(b) - getAverageIight(a);
-        case "height-asc": return getAverageHeight(a) - getAverageHeight(b);
+        case "weight-asc": return getAverageWeight(a) - getAverageWeight(b);
+        case "weight-desc": return getAverageWeight(b) - getAverageWeight(a);
+        case "height-asc": return getAverageHeight(a) - getAverageHeight(a);
         case "height-desc": return getAverageHeight(b) - getAverageHeight(a);
         case "lifespan-asc": return getAverageLifespan(a) - getAverageLifespan(b);
         case "lifespan-desc": return getAverageLifespan(b) - getAverageLifespan(a);
@@ -127,7 +134,7 @@ function BreedList() {
   return (
     <Box sx={{ p: 2 }}>
       
-      {/* Controls Area (Identical to P1) */}
+      {/* Controls Area */}
       <Box sx={{ 
         display: 'flex', 
         flexWrap: 'wrap', 
@@ -149,6 +156,18 @@ function BreedList() {
           Filter Temperaments ({selectedTemperaments.length})
         </Button>
 
+        <FormControlLabel
+          control={
+            <Switch
+              checked={showAvailableOnly}
+              onChange={(e) => setShowAvailableOnly(e.target.checked)}
+              color="primary"
+            />
+          }
+          label="Show Available Only"
+          sx={{ m: "1rem 0", ml: 2 }} 
+        />
+
         {selectedTemperaments.length > 0 && (
           <Button 
             variant="outlined" 
@@ -159,6 +178,20 @@ function BreedList() {
             Clear Filters
           </Button>
         )}
+
+        {/* --- 5. ADD "CLEAR COMPARISON" BUTTON --- */}
+        {compareCount > 0 && (
+          <Button 
+            variant="outlined" 
+            color="error"
+            onClick={clearCompare} // Use the function from context
+            startIcon={<ClearAllIcon />}
+            sx={{ m: "1rem 0" }}
+          >
+            Clear Comparison
+          </Button>
+        )}
+        {/* --- END NEW BUTTON --- */}
       </Box>
 
       <TemperamentFilter
@@ -178,9 +211,8 @@ function BreedList() {
         maxWidth: "1400px",
         margin: "1.5rem auto"
       }}>
-        {/* 'breed' prop now contains the augmented data! */}
         {processedBreeds.map((breed) => (
-          <DogCard key={breed.id} breed={breed} /> // <-- UPDATED COMPONENT
+          <DogCard key={breed.id} breed={breed} />
         ))}
       </Box>
     </Box>

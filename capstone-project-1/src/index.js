@@ -1,23 +1,25 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
 import './index.css';
 import App from './App';
-import { AppThemeProvider } from './context/AppThemeProvider'; // <-- IMPORT NEW
+import reportWebVitals from './reportWebVitals';
+
+import { BrowserRouter } from 'react-router-dom';
 import { CompareProvider } from './context/CompareContext';
-// import { ThemeProvider } from './context/ThemeContext'; // <-- DELETE OLD
+import { AppThemeProvider } from './context/AppThemeProvider'; // <-- 1. IMPORT THE PROVIDER
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <BrowserRouter>
-      {/* Use the new AppThemeProvider */}
-      <AppThemeProvider>
-        {/* CompareProvider is still needed! */}
-        <CompareProvider>
+    {/* 2. WRAP THE APP IN ALL THE PROVIDERS */}
+    <AppThemeProvider>
+      <CompareProvider>
+        <BrowserRouter>
           <App />
-        </CompareProvider>
-      </AppThemeProvider>
-    </BrowserRouter>
+        </BrowserRouter>
+      </CompareProvider>
+    </AppThemeProvider>
   </React.StrictMode>
 );
+
+reportWebVitals();

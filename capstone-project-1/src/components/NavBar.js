@@ -1,27 +1,25 @@
-// Add these imports at the top
-import React from 'react';
+import React, { useContext } from 'react'; // <-- 1. ADD useContext
 import { NavLink, useNavigate } from 'react-router-dom'; 
-import { AppBar, Toolbar, Typography, Button, IconButton, useTheme } from '@mui/material';
+import { AppBar, Toolbar, Typography, Button, IconButton, Box } from '@mui/material';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
-// Make sure the AppThemeProvider is imported if it's used here
-// import { useThemeContext } from '../context/AppThemeProvider'; 
+import { useAppTheme } from '../context/AppThemeProvider';
+import { CompareContext } from '../context/CompareContext'; // <-- 2. IMPORT COMPARE CONTEXT
 
-// --- 1. ACCEPT 'currentUser' and 'setCurrentUser' AS PROPS ---
 function NavBar({ currentUser, setCurrentUser }) {
-  // My theme context (if I have one)
-  // const { mode, toggleTheme } = useThemeContext();
-  const theme = useTheme(); // Fallback if context is not used here
+  const { mode, toggleTheme } = useAppTheme();
   const navigate = useNavigate();
 
-  // --- 2. ADD LOGOUT FUNCTION ---
+  // --- 3. CONSUME THE CONTEXT ---
+  const { compareCount } = useContext(CompareContext);
+
   function handleLogout() {
     fetch("/logout", {
       method: "DELETE",
     }).then(r => {
       if (r.ok) {
-        setCurrentUser(null); // Clear user state in App.js
-        navigate('/login');   // Redirect to login
+        setCurrentUser(null);
+        navigate('/login');
       }
     });
   }
@@ -29,41 +27,49 @@ function NavBar({ currentUser, setCurrentUser }) {
   return (
     <AppBar position="static">
       <Toolbar>
-        <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-          <Button component={NavLink} to="/" color="inherit">
-            Dog Watch
-          </Button>
-        </Typography>
-        
-        <Button component={NavLink} to="/compare" color="inherit">
-          Compare (0) {/* I'll link this to compare context later */}
-        </Button>
-
-        {/* --- 3. ADD CONDITIONAL LOGIC --- */}
-        {currentUser ? (
-          // If user is logged in, show their name and a Logout button
-          <>
-            <Button component={NavLink} to="/admin" color="inherit">
-              Admin Dashboard
+        {/* --- Left-aligned items --- */}
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Typography variant="h6" component="div">
+            <Button component={NavLink} to="/" color="inherit" sx={{ fontSize: '1.25rem' }}>
+              Dog Watch
             </Button>
-            <Typography sx={{ ml: 2 }}>
-              Hi, {currentUser.username}!
-            </Typography>
-            <Button color="inherit" onClick={handleLogout} sx={{ ml: 1 }}>
-              Logout
-            </Button>
-          </>
-        ) : (
-          // If no user, show the Login button
-          <Button component={NavLink} to="/login" color="inherit">
-            Admin Login
+          </Typography>
+          <Button component={NavLink} to="/compare" color="inherit" sx={{ ml: 2 }}>
+            {/* --- 4. THE FIX: Use the dynamic count --- */}
+            Compare ({compareCount})
           </Button>
-        )}
+        </Box>
 
-        {/* My Dark Mode Toggle (if it's in the NavBar) */}
-        <IconButton sx={{ ml: 1 }} onClick={() => { /* TODO: add toggleTheme */ }} color="inherit">
-          {theme.palette.mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
-        </IconButton>
+        {/* --- This Box "grows" to push items apart --- */}
+        <Box sx={{ flexGrow: 1 }} />
+
+        {/* --- Right-aligned items --- */}
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          {currentUser ? (
+            // If user is logged in
+            <>
+              <Button component={NavLink} to="/admin" color="inherit">
+                Admin Dashboard
+              </Button>
+              <Typography sx={{ ml: 2, mr: 1 }}>
+                Hi, {currentUser.username}!
+              </Typography>
+              <Button color="inherit" onClick={handleLogout}>
+                Logout
+              </Button>
+            </>
+          ) : (
+            // If no user
+            <Button component={NavLink} to="/login" color="inherit">
+              Admin Login
+            </Button>
+          )}
+
+          {/* --- DARK MODE FIX: Hook up onClick and mode --- */}
+          <IconButton sx={{ ml: 1 }} onClick={toggleTheme} color="inherit">
+            {mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
+          </IconButton>
+        </Box>
       </Toolbar>
     </AppBar>
   );
