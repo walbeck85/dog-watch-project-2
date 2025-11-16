@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import {
   Modal, Box, Typography, Grid, TextField, Button,
-  Autocomplete, Alert
+  Autocomplete, Alert,
+  // --- NEW IMPORTS for the dropdown ---
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem
 } from '@mui/material';
 
 // --- Style for the Modal Box ---
@@ -19,27 +24,23 @@ const modalStyle = {
   overflowY: 'auto' // Make modal scrollable
 };
 
-// This modal receives the dog to edit, all breeds,
-// and functions to close it and handle the update
 function EditDogModal({ dog, breeds, open, onClose, onUpdateDog }) {
   const [formData, setFormData] = useState({});
   const [error, setError] = useState(null);
 
-  // --- Pre-populate the form when the 'dog' prop changes ---
+  // Pre-populate the form
   useEffect(() => {
     if (dog) {
       setFormData({
         ...dog,
-        // Ensure breed_id is just the ID, not the whole object
         breed_id: dog.breed.id 
       });
     } else {
-      // Clear form if no dog is selected
       setFormData({});
     }
-  }, [dog]); // This effect re-runs when 'dog' changes
+  }, [dog]); // This re-runs when the 'dog' prop changes
 
-  // --- Handlers for form fields ---
+  // Handlers for form fields
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -49,20 +50,23 @@ function EditDogModal({ dog, breeds, open, onClose, onUpdateDog }) {
     setFormData(prev => ({ ...prev, breed_id: newValue ? newValue.id : null }));
   };
 
-  // --- Handle the PATCH request ---
+  // Handle the PATCH request
   const handleSubmit = (e) => {
     e.preventDefault();
     setError(null);
 
+    // "Clean" the data before sending
+    const { user, breed, ...cleanData } = formData;
     const updatedData = {
-      ...formData,
-      age: parseInt(formData.age) || null
+      ...cleanData,
+      age: parseInt(formData.age) || null,
+      breed_id: formData.breed_id
     };
 
     fetch(`/dogs/${dog.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(updatedData)
+      body: JSON.stringify(updatedData) 
     })
     .then(r => {
       if (r.ok) {
@@ -134,16 +138,27 @@ function EditDogModal({ dog, breeds, open, onClose, onUpdateDog }) {
               fullWidth
             />
           </Grid>
+          
+          {/* --- REFACTOR "STATUS" FIELD --- */}
           <Grid item xs={12} sm={6}>
-            <TextField
-              label="Status"
-              name="status"
-              value={formData.status || ''}
-              onChange={handleChange}
-              required
-              fullWidth
-            />
+            <FormControl fullWidth required>
+              <InputLabel id="edit-status-select-label">Status</InputLabel>
+              <Select
+                labelId="edit-status-select-label"
+                id="edit-status-select"
+                name="status"
+                value={formData.status || 'Available'} // Default to 'Available' if null
+                label="Status"
+                onChange={handleChange}
+              >
+                <MenuItem value="Available">Available</MenuItem>
+                <MenuItem value="Adopted">Adopted</MenuItem>
+                <MenuItem value="Pending">Pending</MenuItem>
+              </Select>
+            </FormControl>
           </Grid>
+          {/* --- END REFACTOR --- */}
+
            <Grid item xs={12} sm={6}>
             <TextField
               label="Temperament (e.g., Playful, Loyal)"

@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react"; // 1. Import useContext
+import { CompareContext } from "../context/CompareContext"; // 2. Import CompareContext
 import DogCard from "./DogCard";
 import SearchBar from "./SearchBar";
 import SortDropdown from "./SortDropdown";
@@ -7,9 +8,10 @@ import {
   Box, 
   Button, 
   CircularProgress, 
-  Switch, // <-- NEW IMPORT
-  FormControlLabel // <-- NEW IMPORT
+  Switch,
+  FormControlLabel 
 } from '@mui/material';
+import ClearAllIcon from '@mui/icons-material/ClearAll'; // 3. Import the icon
 
 function BreedList() {
   // --- STATE MANAGEMENT ---
@@ -23,9 +25,10 @@ function BreedList() {
   const [allTemperaments, setAllTemperaments] = useState([]);
   const [selectedTemperaments, setSelectedTemperaments] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  // --- NEW: State for our toggle ---
   const [showAvailableOnly, setShowAvailableOnly] = useState(false);
+
+  // --- 4. CONSUME COMPARE CONTEXT ---
+  const { compareCount, clearCompare } = useContext(CompareContext);
 
   // --- DATA FETCHING (HYBRID MODEL) ---
   useEffect(() => {
@@ -79,6 +82,7 @@ function BreedList() {
   }, []); 
 
   // --- FILTERING & SORTING ---
+  // (All helper functions and .filter/.sort logic remain exactly the same)
   const getAverageFromRange = (rangeString) => {
     if (!rangeString) return 0;
     const numbers = rangeString.match(/\d+/g);
@@ -101,11 +105,8 @@ function BreedList() {
         breed.temperament.includes(temp)
       );
     })
-    // --- NEW: "Available Only" Filter ---
     .filter((breed) => {
-      // If the toggle is off, show all breeds (return true)
       if (!showAvailableOnly) return true;
-      // If the toggle is on, ONLY show breeds with available dogs
       return breed.available_dogs && breed.available_dogs.length > 0;
     })
     .sort((a, b) => {
@@ -155,7 +156,6 @@ function BreedList() {
           Filter Temperaments ({selectedTemperaments.length})
         </Button>
 
-        {/* --- NEW: "Available Only" Switch --- */}
         <FormControlLabel
           control={
             <Switch
@@ -165,9 +165,8 @@ function BreedList() {
             />
           }
           label="Show Available Only"
-          sx={{ m: "1rem 0", ml: 2 }} // Add margin
+          sx={{ m: "1rem 0", ml: 2 }} 
         />
-        {/* --- END NEW SWITCH --- */}
 
         {selectedTemperaments.length > 0 && (
           <Button 
@@ -179,6 +178,20 @@ function BreedList() {
             Clear Filters
           </Button>
         )}
+
+        {/* --- 5. ADD "CLEAR COMPARISON" BUTTON --- */}
+        {compareCount > 0 && (
+          <Button 
+            variant="outlined" 
+            color="error"
+            onClick={clearCompare} // Use the function from context
+            startIcon={<ClearAllIcon />}
+            sx={{ m: "1rem 0" }}
+          >
+            Clear Comparison
+          </Button>
+        )}
+        {/* --- END NEW BUTTON --- */}
       </Box>
 
       <TemperamentFilter

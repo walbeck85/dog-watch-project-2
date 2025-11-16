@@ -1,6 +1,6 @@
 import React, { useState, useContext } from "react";
-import { CompareContext } from "../context/CompareContext";
-import "./DogCard.css"; // Keep old CSS for animation
+import { CompareContext } from "../context/CompareContext"; // Correct path
+import "./DogCard.css"; // Correct path (since I renamed it)
 import { useNavigate } from 'react-router-dom'; 
 
 import {
@@ -32,10 +32,20 @@ function DogCard({ breed, dog }) {
 
   // --- API Fetch for Card Details (for Breeds only) ---
   const fetchBreedDetails = async () => {
-    if (isDogCard || details) { 
+    // If it's a dog card, I don't need to fetch. I *already* have the details.
+    if (isDogCard) {
+      setDetails(dog); // Set details to the dog object
+      setIsFlipped(true);
+      return;
+    }
+    
+    // If it's a breed card and I already have details, just flip
+    if (details) { 
       setIsFlipped(true); 
       return;
     }
+
+    // Otherwise, it's a breed card that needs fetching
     setIsLoading(true);
     setIsFlipped(true);
     setError(null);
@@ -55,9 +65,11 @@ function DogCard({ breed, dog }) {
 
   // --- Event Handlers ---
   const handleCardClick = () => {
-    if (!isDogCard) {
-      if (!isFlipped) fetchBreedDetails();
-      else setIsFlipped(false);
+    // This logic now works for both Breed and Dog cards
+    if (!isFlipped) {
+      fetchBreedDetails(); // This will fetch (breed) or set details (dog)
+    } else {
+      setIsFlipped(false);
     }
   };
 
@@ -155,28 +167,35 @@ function DogCard({ breed, dog }) {
         )}
         {error && <Typography color="error">Error: {error}</Typography>}
         
-        {isDogCard && dog && (
+        {/* --- THIS IS THE FIX ---
+            I now use 'details' for BOTH.
+            If it's a dog, 'details' gets set to the 'dog' prop.
+            If it's a breed, 'details' gets set by the fetch.
+        --- */}
+        {details && isDogCard && (
           <>
-            <Typography variant="h6" component="div" gutterBottom>{dog.name}</Typography>
-            <Typography variant="body2" gutterBottom><strong>Status:</strong> {dog.status}</Typography>
-            <Typography variant="body2" gutterBottom><strong>Age:</strong> {dog.age} years old</Typography>
-            <Typography variant="body2" gutterBottom><strong>Breed:</strong> {dog.breed.name}</Typography>
-            {dog.weight && (
-              <Typography variant="body2" gutterBottom><strong>Weight:</strong> {dog.weight}</Typography>
+            <Typography variant="h6" component="div" gutterBottom>{details.name}</Typography>
+            <Typography variant="body2" gutterBottom><strong>Status:</strong> {details.status}</Typography>
+            <Typography variant="body2" gutterBottom><strong>Age:</strong> {details.age} years old</Typography>
+            <Typography variant="body2" gutterBottom><strong>Breed:</strong> {details.breed.name}</Typography>
+            
+            {/* --- NEW FIELDS (as requested) --- */}
+            {details.weight && (
+              <Typography variant="body2" gutterBottom><strong>Weight:</strong> {details.weight}</Typography>
             )}
-            {dog.temperament && (
-              <Typography variant="body2" gutterBottom><strong>Temperament:</strong> {dog.temperament}</Typography>
+            {details.temperament && (
+              <Typography variant="body2" gutterBottom><strong>Temperament:</strong> {details.temperament}</Typography>
             )}
-            {dog.description && (
+            {details.description && (
               <Typography variant="body2" sx={{ mt: 2 }}>
-                <strong>About {dog.name}:</strong><br />
-                {dog.description}
+                <strong>About {details.name}:</strong><br />
+                {details.description}
               </Typography>
             )}
           </>
         )}
         
-        {!isDogCard && details && (
+        {details && !isDogCard && (
           <>
             <Typography variant="h6" component="div" gutterBottom>{details.name}</Typography>
             <Typography variant="body2"><strong>Temperament:</strong> {details.temperament}</Typography>
@@ -194,11 +213,13 @@ function DogCard({ breed, dog }) {
     <div className="card-scene">
       <div 
         className={`card-container ${isFlipped ? "is-flipped" : ""}`}
-        onClick={!isDogCard ? handleCardClick : undefined}
+        // I can now click to flip *all* cards
+        onClick={handleCardClick}
       >
         <div className="card-face card-face-front">{renderCardFront()}</div>
         <div className="card-face card-face-back">{renderCardBack()}</div>
       </div>
+
       <Snackbar
         open={toast.open}
         autoHideDuration={3000}

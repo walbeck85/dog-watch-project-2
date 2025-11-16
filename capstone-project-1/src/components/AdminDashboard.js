@@ -3,10 +3,15 @@ import {
   Container, Typography, Box, TextField, Button, 
   Alert, Grid,
   Autocomplete,
-  CircularProgress 
+  CircularProgress,
+  // --- NEW IMPORTS for the dropdown ---
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem
 } from '@mui/material';
-import ManageDogsList from './ManageDogList'; // This import matches your file 'ManageDogList.js'
-import EditDogModal from './EditDogModal'; // <-- 1. IMPORT THE NEW MODAL
+import ManageDogsList from './ManageDogList'; // The correct file name
+import EditDogModal from './EditDogModal'; 
 
 function AdminDashboard({ currentUser }) {
   // --- STATE FOR DATA ---
@@ -105,7 +110,7 @@ function AdminDashboard({ currentUser }) {
     });
   }
 
-  // --- NEW: EDIT HANDLERS (for Modal) ---
+  // --- EDIT HANDLERS (for Modal) ---
   const handleOpenEditModal = (dog) => {
     setDogToEdit(dog);
     setIsModalOpen(true);
@@ -117,12 +122,10 @@ function AdminDashboard({ currentUser }) {
   };
 
   const handleUpdateDog = (updatedDog) => {
-    // Find the dog in the list and replace it with the updated version
     setDogs(currentDogs => 
       currentDogs.map(dog => (dog.id === updatedDog.id ? updatedDog : dog))
     );
   };
-  // --- END NEW EDIT HANDLERS ---
 
   return (
     <Container>
@@ -188,16 +191,27 @@ function AdminDashboard({ currentUser }) {
               fullWidth
             />
           </Grid>
+          
+          {/* --- REFACTOR "STATUS" FIELD --- */}
           <Grid item xs={12} sm={6}>
-            <TextField
-              label="Status"
-              name="status"
-              value={formData.status}
-              onChange={handleChange}
-              required
-              fullWidth
-            />
+            <FormControl fullWidth required>
+              <InputLabel id="status-select-label">Status</InputLabel>
+              <Select
+                labelId="status-select-label"
+                id="status-select"
+                name="status" // This name must match the state key
+                value={formData.status}
+                label="Status"
+                onChange={handleChange} // Use the same generic handler
+              >
+                <MenuItem value="Available">Available</MenuItem>
+                <MenuItem value="Adopted">Adopted</MenuItem>
+                <MenuItem value="Pending">Pending</MenuItem>
+              </Select>
+            </FormControl>
           </Grid>
+          {/* --- END REFACTOR --- */}
+
            <Grid item xs={12} sm={6}>
             <TextField
               label="Temperament (e.g., Playful, Loyal)"
@@ -249,13 +263,12 @@ function AdminDashboard({ currentUser }) {
           <ManageDogsList 
             dogs={dogs} 
             onDeleteDog={handleDeleteDog}
-            onEditDog={handleOpenEditModal} // <-- 2. PASS THE "OPEN" FUNCTION
+            onEditDog={handleOpenEditModal} 
           />
         )}
       </Box>
 
       {/* --- RENDER THE EDIT MODAL (it's hidden by default) --- */}
-      {/* 3. RENDER THE MODAL */}
       <EditDogModal 
         dog={dogToEdit}
         breeds={breeds}

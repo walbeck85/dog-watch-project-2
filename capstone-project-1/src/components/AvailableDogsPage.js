@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Container, Typography, Box, CircularProgress, Alert } from '@mui/material';
-import DogCard from './DogCard'; // It correctly imports our new DogCard
+import DogCard from './DogCard'; // It correctly imports the new DogCard
 
 function AvailableDogsPage() {
   const [dogs, setDogs] = useState([]);
@@ -14,7 +14,7 @@ function AvailableDogsPage() {
   useEffect(() => {
     async function fetchAvailableDogs() {
       try {
-        // Fetch from our new endpoint
+        // Fetch from the new endpoint
         const response = await fetch(`/breeds/api/${api_id}/dogs`);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -56,7 +56,7 @@ function AvailableDogsPage() {
           justifyItems: "center",
           mt: 4
         }}>
-          {/* We pass the 'dog' prop to our universal card */}
+          {/* I pass the 'dog' prop to the universal card */}
           {dogs.map((dog) => (
             <DogCard key={dog.id} dog={dog} />
           ))}
