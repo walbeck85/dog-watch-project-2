@@ -2,7 +2,7 @@
 
 from config import app, db
 from models import User, Breed, Dog
-import requests # This is why we installed the 'requests' package
+import requests # This is why I installed the 'requests' package
 
 # --- CONFIG ---
 DOG_API_URL = "https://api.thedogapi.com/v1/breeds"
@@ -33,7 +33,7 @@ with app.app_context():
         breed_objects = []
         
         for b in api_breeds:
-            # We store the name AND their external ID
+            # I store the name AND their external ID
             if b.get('id') and b.get('name'):
                 breed = Breed(
                     name=b['name'],
@@ -58,7 +58,6 @@ with app.app_context():
     db.session.commit()
     
     # --- 4. SEED A SAMPLE DOG ---
-    # Let's find the "Labrador Retriever" we just added to attach a dog to it
     lab = Breed.query.filter_by(name="Labrador Retriever").first()
     admin_user = User.query.filter_by(username="admin").first()
     
