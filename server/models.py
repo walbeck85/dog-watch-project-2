@@ -1,4 +1,4 @@
-# Import the instances we created in config.py
+# Import the instances I created in config.py
 from config import db, bcrypt, ma
 
 # Import SQLAlchemy features
@@ -50,7 +50,7 @@ class Breed(db.Model):
     name = db.Column(db.String, unique=True, nullable=False)
     
     # --- NEW COLUMN ---
-    # This links our local breed to TheDogAPI's ID system
+    # This links the local breed to TheDogAPI's ID system
     api_id = db.Column(db.Integer, unique=True) 
 
     dogs = db.relationship('Dog', back_populates='breed')
@@ -66,6 +66,12 @@ class Dog(db.Model):
     name = db.Column(db.String, nullable=False)
     age = db.Column(db.Integer)
     status = db.Column(db.String, default='Available')
+
+    # --- NEW COLUMNS ---
+    description = db.Column(db.Text) # Use db.Text for longer descriptions
+    weight = db.Column(db.String) # Keep as String for ranges (e.g., "50-70 lbs")
+    temperament = db.Column(db.String)
+    # --- END NEW COLUMNS ---
     
     # --- NEW COLUMN ---
     # Admin can paste a URL here
